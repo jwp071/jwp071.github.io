@@ -39,6 +39,12 @@ window.addEventListener("load", () => {
       Notification.requestPermission().then((status) => {
         // If the user said okay
         if (status === "granted") {
+
+          // service worker notification
+          navigator.serviceWorker.ready.then(function(registration) {
+            registration.showNotification('Notification granted second scenario with ServiceWorker');
+          });
+          
           let i = 0;
           // Using an interval cause some browsers (including Firefox) are blocking notifications if there are too much in a certain time.
           const interval = setInterval(() => {

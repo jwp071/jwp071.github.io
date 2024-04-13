@@ -1,6 +1,8 @@
 window.addEventListener("load", () => {
   const button = document.querySelector("button");
 
+  navigator.serviceWorker.register('sw.js');
+
   if (window.self !== window.top) {
     // Ensure that if our document is in a frame, we get the user
     // to first open it in its own tab or window. Otherwise, it
@@ -14,6 +16,12 @@ window.addEventListener("load", () => {
     if (Notification?.permission === "granted") {
       // If the user agreed to get notified
       // Let's try to send ten notifications
+
+      // service worker notification
+      navigator.serviceWorker.ready.then(function(registration) {
+        registration.showNotification('Notification granted with ServiceWorker');
+      });
+      
       let i = 0;
       // Using an interval cause some browsers (including Firefox) are blocking notifications if there are too much in a certain time.
       const interval = setInterval(() => {

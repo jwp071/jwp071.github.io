@@ -13,6 +13,8 @@ window.addEventListener("load", () => {
   }
 
   button.addEventListener("click", () => {
+    showNotification();
+    
     if (Notification?.permission === "granted") {
       // If the user agreed to get notified
       // Let's try to send ten notifications
@@ -77,3 +79,17 @@ window.addEventListener("load", () => {
     }
   });
 });
+
+function showNotification() {
+  Notification.requestPermission().then((result) => {
+    if (result === "granted") {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.showNotification("Vibration Sample", {
+          body: "Buzz! Buzz!",
+          vibrate: [200, 100, 200, 100, 200, 100, 200],
+          tag: "vibration-sample",
+        });
+      });
+    }
+  });
+}

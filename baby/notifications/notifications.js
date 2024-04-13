@@ -23,7 +23,7 @@ window.addEventListener("load", () => {
           clearInterval(interval);
         }
         i++;
-      }, 200);
+      }, 2000);
     } else if (Notification && Notification.permission !== "denied") {
       // If the user hasn't told if they want to be notified or not
       // Note: because of Chrome, we are not sure the permission property
@@ -42,7 +42,7 @@ window.addEventListener("load", () => {
               clearInterval(interval);
             }
             i++;
-          }, 200);
+          }, 4000);
         } else {
           // Otherwise, we can fallback to a regular modal alert
           alert("Hi!");

@@ -5,7 +5,7 @@ window.addEventListener("load", () => {
     // Ensure that if our document is in a frame, we get the user
     // to first open it in its own tab or window. Otherwise, it
     // won't be able to request permission to send notifications.
-    button.textContent = "View live result of the example code above";
+    button.textContent = "Subscribe to Notifications";
     button.addEventListener("click", () => window.open(location.href));
     return;
   }

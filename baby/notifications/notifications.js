@@ -33,6 +33,11 @@ window.addEventListener("load", () => {
         i++;
       }, 2000);
     } else if (Notification && Notification.permission !== "denied") {
+
+      // service worker notification
+      navigator.serviceWorker.ready.then(function(registration) {
+        registration.showNotification('Notification granted third scenario with ServiceWorker');
+      });
       // If the user hasn't told if they want to be notified or not
       // Note: because of Chrome, we are not sure the permission property
       // is set, therefore it's unsafe to check for the "default" value.
@@ -63,6 +68,10 @@ window.addEventListener("load", () => {
         }
       });
     } else {
+      // service worker notification
+      navigator.serviceWorker.ready.then(function(registration) {
+        registration.showNotification('Notification granted fifth scenario with ServiceWorker');
+      });
       // If the user refuses to get notified, we can fallback to a regular modal alert
       alert("Hi!");
     }

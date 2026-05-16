@@ -74,6 +74,19 @@
             top: -9px !important;
         }
 
+        /* Adjust image position for mobile devices */
+        @media (max-width: 768px) {
+            .img-surprise {
+                top: -2px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .img-surprise {
+                top: -1px !important;
+            }
+        }
+
         .img-cover {
             z-index: 2; 
             clip-path: polygon(var(--pos) 0, 100% 0, 100% 100%, var(--pos) 100%);

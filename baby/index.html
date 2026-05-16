@@ -3,121 +3,429 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baby Morton</title>
+    <title>Baby 2!</title>
+    
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        #container {
-            width: 100vw;
-            height: 100vh;
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f7f6;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
-            gap: 15px; 
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
         }
 
-        p {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 15px;
+        .card {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            max-width: 700px;
+            width: 100%;
+            text-align: center;
         }
 
-        div {
-            font-size: 18px;
-            text-align: left; /* left-align the options */
+        .question {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 25px;
         }
 
-        .confetti {
+        .slider-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            border-radius: 16px;
+            overflow: hidden;
+            background-color: #e0e0e0;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            --pos: 0%; 
+        }
+
+        .slider-wrapper img {
             position: absolute;
-            width: 20px;
-            height: 6px;
-            opacity: 0.8;
+            top: 0;
+            left: 0;
+            aspect-ratio: 3 / 4;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top;
+            pointer-events: none;
+            user-select: none;
         }
 
-        button {
-            padding: 10px 20px;
-            font-size: 18px;
+        .img-surprise {
+            z-index: 1;
+            top: -9px !important;
+        }
+
+        .img-cover {
+            z-index: 2; 
+            clip-path: polygon(var(--pos) 0, 100% 0, 100% 100%, var(--pos) 100%);
+        }
+
+        .slider-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: var(--pos);
+            width: 4px;
+            background: #fff;
+            z-index: 3;
+            transform: translateX(-50%);
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(0,0,0,0.4);
+        }
+
+        .slider-button {
+            position: absolute;
+            top: 50%;
+            left: var(--pos);
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            background: #fff;
+            border-radius: 50%;
+            z-index: 4;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        /* SVG styling for the arrows */
+        .slider-button svg {
+            width: 24px;
+            height: 24px;
+            stroke: #333;
+        }
+
+        input[type="range"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            opacity: 0;
+            cursor: ew-resize;
+            margin: 0;
+        }
+
+        .reveal-text {
+            margin-top: 30px;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: #FF69B4;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .reveal-text.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .survey-container {
+            margin-top: 40px;
+            padding: 30px;
+            background: #fff5fa;
+            border-radius: 16px;
+            border: 2px solid #FF69B4;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+            display: none;
+        }
+
+        .survey-container.show {
+            opacity: 1;
+            transform: translateY(0);
+            display: block;
+        }
+
+        .survey-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #FF69B4;
+            margin-bottom: 25px;
+        }
+
+        .survey-question {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .survey-question label {
+            display: block;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+
+        .survey-question input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #FF69B4;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+
+        .survey-question input[type="text"]:focus {
+            outline: none;
+            border-color: #FF1493;
+            box-shadow: 0 0 8px rgba(255, 105, 180, 0.3);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             cursor: pointer;
-            border: none;
-            background-color: #fbff00;
-            color: rgb(0, 0, 0);
-            border-radius: 5px;
-            transition: background-color 0.3s;
+            font-weight: 500;
+            color: #2c3e50;
         }
 
-        button:hover {
-            background-color: #52500d;
+        .radio-label input[type="radio"] {
+            cursor: pointer;
+            accent-color: #FF69B4;
+            width: 20px;
+            height: 20px;
+        }
+
+        .survey-submit {
+            width: 100%;
+            padding: 14px;
+            background-color: #FF69B4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .survey-submit:hover {
+            background-color: #FF1493;
+        }
+
+        .survey-message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .survey-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .survey-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            display: block;
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <p>Is baby Morton a boy or girl?</p>
-        <div>
-            <input type="radio" id="option1" name="magicOption" value="option1">
-            <label for="option1">Girl</label>
+
+    <div class="card">
+        <h1 class="question">Is baby #2 a boy or girl?</h1>
+
+        <div class="slider-wrapper" id="slider-container">
+            <!-- The surprise underneath -->
+            <img src="color2.png" alt="Surprise Puppy" class="img-surprise">
+            
+            <!-- The cover on top (Fixed reliable image) -->
+            <img src="bw.jpg" alt="Wrapped Present" class="img-cover">
+            
+            <div class="slider-line"></div>
+            <div class="slider-button">
+                <!-- SVG graphic replaces the broken font characters -->
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18l-6-6 6-6M15 18l6-6-6-6"/>
+                </svg>
+            </div>
+            
+            <input type="range" id="image-slider" min="0" max="100" value="0">
         </div>
-        <div>
-            <input type="radio" id="option2" name="magicOption" value="option2">
-            <label for="option2">Boy</label>
+
+        <div class="reveal-text" id="reveal-text">
+            It's a girl! 🎉
         </div>
-        <button onclick="checkOption()">Submit</button>
+
+        <div class="survey-container" id="survey-container">
+            <h2 class="survey-title">Help us celebrate!</h2>
+            
+            <form id="survey-form">
+                <div class="survey-question">
+                    <label for="baby-name">What would you like to name the baby?</label>
+                    <input type="text" id="baby-name" name="baby-name" placeholder="Enter a name..." required>
+                </div>
+
+                <div class="survey-question">
+                    <label>Should Jeff keep the mustache?</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="mustache" value="Yes" required>
+                            Yes
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="mustache" value="No" required>
+                            No
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="survey-submit">Submit Your Thoughts</button>
+            </form>
+            <div class="survey-message" id="survey-message"></div>
+        </div>
     </div>
 
-    <audio id="funSound" src="John Cena.mp3"></audio> <!-- audio element for the sound -->
-
-    <!-- Javascript -->
     <script>
-        function checkOption() {
-            let selectedOption = document.querySelector('input[name="magicOption"]:checked');
-            if (selectedOption && selectedOption.value === "option2") {
-                document.body.style.backgroundColor = "blue";
-                document.body.style.color = "white"; // changing text color to white
-                launchConfetti();
-                playFunSound();
-                setTimeout(() => {
-                    alert('It\'s a boy!!');
-                }, 2000);
-            } else {
-                alert('Please try again! :)');
+        const slider = document.getElementById('image-slider');
+        const container = document.getElementById('slider-container');
+        const revealText = document.getElementById('reveal-text');
+        const surveyContainer = document.getElementById('survey-container');
+        const surveyForm = document.getElementById('survey-form');
+        const surveyMessage = document.getElementById('survey-message');
+        
+        let hasRevealed = false; 
+
+        slider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            
+            container.style.setProperty('--pos', `${value}%`);
+
+            if (value >= 99 && !hasRevealed) {
+                hasRevealed = true;
+                revealText.classList.add('show');
+                surveyContainer.classList.add('show');
+                fireConfetti();
             }
-        }
+        });
 
-        function playFunSound() {
-            document.getElementById('funSound').play(); // play the fun sound
-        }
+        function fireConfetti() {
+            const duration = 3000;
+            const end = Date.now() + duration;
 
-        function launchConfetti() {
-            for(let i = 0; i < 500; i++) {
-                let confettiPiece = document.createElement('div');
-                confettiPiece.classList.add('confetti');
-                confettiPiece.style.backgroundColor = randomColor();
-                confettiPiece.style.left = `${Math.random() * 100}vw`;
-                confettiPiece.style.top = `${-10}px`;
-                document.body.appendChild(confettiPiece);
+            (function frame() {
+                confetti({
+                    particleCount: 5,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#FF69B4', '#FF1493', '#FFFFFF'] // Pink and white confetti!
+                });
                 
-                animateConfetti(confettiPiece);
+                confetti({
+                    particleCount: 5,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#FF69B4', '#FF1493', '#FFFFFF'] // Pink and white confetti!
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+
+        // Handle survey form submission
+        surveyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const babyName = document.getElementById('baby-name').value;
+            const mustache = document.querySelector('input[name="mustache"]:checked').value;
+            const submitButton = surveyForm.querySelector('.survey-submit');
+
+            // Disable submit button immediately
+            submitButton.disabled = true;
+            submitButton.textContent = 'Submitting...';
+
+            // Collect browser and device info
+            const browserInfo = navigator.userAgent;
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+            try {
+                // Replace GOOGLE_APPS_SCRIPT_URL with your Google Apps Script deployment URL
+                const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznmdtSfJbKnuvCITPcPupEk5KgWu0RBc8cnkTnht1PeiqCpeAwcYPxgrAJXTAYXunKtA/exec';
+                
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors', // Crucial for cross-domain requests
+                    headers: {
+                        'Content-Type': 'text/plain' // Prevents CORS preflight issues with Apps Script
+                    },
+                    body: JSON.stringify({
+                        babyName: babyName,
+                        mustache: mustache,
+                        timestamp: new Date().toLocaleString(),
+                        browserInfo: browserInfo,
+                        timezone: timezone
+                    })
+                });
+
+                const responseData = await response.text();
+                const data = JSON.parse(responseData);
+
+                // Convert number to ordinal (1st, 2nd, 3rd, etc.)
+                function getOrdinal(n) {
+                    const s = ['th', 'st', 'nd', 'rd'];
+                    const v = n % 100;
+                    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+                }
+
+                const voteCount = data.totalVotes || 1;
+                const ordinal = getOrdinal(voteCount);
+                surveyMessage.textContent = `✅ Thank you! You are the ${ordinal} person to respond.`;
+                surveyMessage.classList.remove('error');
+                surveyMessage.classList.add('success');
+                surveyForm.style.display = 'none';
+            } catch (error) {
+                console.error('Error submitting survey:', error);
+                surveyMessage.textContent = 'There was an issue submitting your response. Feel free to text Jeff instead :)';
+                surveyMessage.classList.add('error');
+                surveyMessage.classList.remove('success');
+                // Re-enable button on error
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Your Thoughts';
             }
-        }
-
-        function animateConfetti(confettiPiece) {
-            setTimeout(() => {
-                let fallDuration = (Math.random() * 1) * 2.5 + 2;  // random fall duration between 1.5 to 3 seconds
-                confettiPiece.style.transform = `translateY(${window.innerHeight + 20}px) rotate(${Math.random() * 360}deg)`;
-                confettiPiece.style.transition = `all ${fallDuration}s ease-in`;
-            }, 10);
-
-            setTimeout(() => {
-                confettiPiece.remove();
-            }, 5000);
-        }
-
-        function randomColor() {
-            return `#${Math.floor(Math.random()*16777215).toString(16)}`;
-        }
+        });
     </script>
+
 </body>
 </html>

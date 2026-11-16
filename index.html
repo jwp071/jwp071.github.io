@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Jeff Pettyjohn</title>
-  <meta name="description" content="Jeff Pettyjohn's corner of the internet. The dot after the name is a ball: pull it back and aim at the drone.">
+  <meta name="description" content="Jeff Pettyjohn's corner of the internet. Play basketball, baseball or tennis against a drone, on courts with the name built in.">
   <meta name="theme-color" content="#1b2f4f">
   <link rel="canonical" href="https://jeffpettyjohn.com/">
 
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://jeffpettyjohn.com/">
   <meta property="og:title" content="Jeff Pettyjohn">
-  <meta property="og:description" content="The dot after the name is a ball. Pull it back and aim at the drone.">
+  <meta property="og:description" content="Play basketball, baseball or tennis against a drone, on courts with the name built in.">
   <meta property="og:image" content="https://jeffpettyjohn.com/assets/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -33,7 +33,7 @@
   <main>
     <h1 class="sr">Jeff Pettyjohn</h1>
     <div class="info" id="info">
-      <p class="lede">I build software. The dot after my name is a ball: pull back, aim at the drone, let go.</p>
+      <p class="lede">I build software. <span id="lede-how">The dot after my name is a ball: pull back, aim for the hoop, let go.</span></p>
       <ul class="links">
         <li><a id="email" data-u="jeff" data-d="jeffpettyjohn.com" href="#info">Email<noscript>: jeff [at] jeffpettyjohn.com</noscript></a></li>
         <li><a href="https://github.com/jwp071/" rel="me noopener" target="_blank">GitHub</a></li>
@@ -43,10 +43,17 @@
     </div>
   </main>
 
+  <nav class="modes" id="modes" aria-label="Choose a game">
+    <button type="button" data-mode="hoops" aria-pressed="true">Basketball</button>
+    <button type="button" data-mode="baseball" aria-pressed="false">Baseball</button>
+    <button type="button" data-mode="tennis" aria-pressed="false">Tennis</button>
+    <button type="button" data-mode="mixed" aria-pressed="false">Mixed</button>
+  </nav>
+
   <div class="hud" id="hud">
     <div class="hud-score">
       <span class="num" id="score">0</span>
-      <span class="unit" id="ballname">Basketball</span>
+      <span class="unit" id="goal">Basketball: through the hoop</span>
     </div>
     <div class="hud-side">
       <span class="strikes" id="strikes" role="img" aria-label="0 of 3 strikes"><i></i><i></i><i></i></span>
@@ -56,15 +63,20 @@
   </div>
 
   <section class="over" id="over" aria-labelledby="over-title">
+    <button class="x" id="over-x" type="button" aria-label="Close">×</button>
     <p class="eyebrow" id="over-title">Three strikes</p>
     <p class="result"><span class="num" id="over-score">0</span> <span class="unit" id="over-unit">points</span></p>
     <p class="detail" id="over-best"></p>
     <div class="over-btns">
       <button class="btn main" id="again" type="button">Play again</button>
       <button class="btn" id="share" type="button">Challenge a friend</button>
+      <button class="btn" id="close" type="button">Close</button>
     </div>
   </section>
 
-  <script defer src="/assets/game.js"></script>
+  <script defer src="/assets/core.js"></script>
+  <script defer src="/assets/sling.js"></script>
+  <script defer src="/assets/tennis.js"></script>
+  <script defer src="/assets/baseball.js"></script>
 </body>
 </html>

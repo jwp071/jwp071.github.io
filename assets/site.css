@@ -94,7 +94,30 @@ a { color: inherit; }
 .links a:hover { color: var(--orange); border-color: var(--orange); }
 .note { margin-top: .8rem; font-style: italic; color: var(--soft); font-size: .95rem; }
 body[data-state='play'] .info { opacity: .6; }
-body[data-state='over'] .info { opacity: .25; }
+body[data-state='play'][data-mode='tennis'] .info, body[data-state='play'][data-mode='baseball'] .info { opacity: 0; visibility: hidden; }
+/* On the green and blue courts the words sit on a light card so they stay readable. */
+body[data-mode='tennis'] .info, body[data-mode='baseball'] .info {
+  background: rgba(251, 246, 234, .93); border: 1px solid var(--ink); padding: 14px 16px 13px;
+  left: max(16px, 3vw); bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Game picker */
+.modes {
+  position: fixed; z-index: 3;
+  top: calc(22px + env(safe-area-inset-top, 0px)); left: max(22px, 6vw); right: max(22px, 6vw);
+  display: flex; flex-wrap: wrap; gap: 6px;
+  pointer-events: none;
+  transition: opacity .3s ease, visibility .3s;
+}
+.modes button {
+  pointer-events: auto;
+  font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+  background: rgba(251, 246, 234, .92); color: var(--ink);
+  border: 1px solid var(--ink); padding: 10px 12px;
+}
+.modes button:hover { background: var(--chalk); }
+.modes button[aria-pressed='true'] { background: var(--ink); color: var(--chalk); }
+body[data-state='play'] .modes { opacity: 0; visibility: hidden; }
 
 /* Scoreboard */
 .hud {
@@ -117,7 +140,7 @@ body[data-state='over'] .info { opacity: .25; }
 .hud-side button { pointer-events: auto; border: 1px solid var(--rule); padding: 8px 10px; white-space: nowrap; }
 .hud-side { flex-shrink: 0; }
 .hud-side button:hover { background: var(--ink); color: var(--chalk); }
-body[data-state='idle'] .hud { opacity: 0; visibility: hidden; }
+body[data-state='idle'] .hud, body[data-state='over'] .hud { opacity: 0; visibility: hidden; }
 
 .over {
   position: fixed; z-index: 4; left: 50%; top: 50%;
@@ -138,6 +161,8 @@ body[data-state='idle'] .hud { opacity: 0; visibility: hidden; }
 .result .num { font-size: clamp(3.6rem, 16vw, 5rem); }
 .detail { font-style: italic; color: var(--soft); line-height: 1.5; }
 .detail.new { color: var(--orange); font-weight: 600; }
+.over .x { position: absolute; top: 6px; right: 8px; width: 36px; height: 36px; font: 400 26px/1 var(--mono); color: var(--chalk); opacity: .75; }
+.over .x:hover { opacity: 1; }
 .over-btns { margin-top: 20px; display: flex; flex-direction: column; gap: 9px; }
 .btn {
   font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
@@ -151,6 +176,7 @@ body:not([data-state='over']) .over { opacity: 0; visibility: hidden; transform:
 @media (max-width: 699px) {
   .lede { font-size: 1rem; }
   .stat { display: none; }
+  .modes button { padding: 10px 9px; letter-spacing: .08em; }
   .num { font-size: 2rem; }
   .hud .unit { letter-spacing: .08em; }
 }

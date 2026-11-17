@@ -22,7 +22,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
   <link rel="preload" href="/assets/fonts/anton.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/assets/site.css?v=20261117c">
   <noscript><style>.sr { position: static; width: auto; height: auto; clip-path: none; font: 400 clamp(3rem, 16vw, 11rem)/.95 Anton, Impact, sans-serif; text-transform: uppercase; padding: 14vh 6vw 0; }</style></noscript>
 </head>
 <body data-state="idle">
@@ -56,15 +56,16 @@
       <span class="unit" id="goal">Basketball: through the hoop</span>
     </div>
     <div class="hud-side">
-      <span class="strikes" id="strikes" role="img" aria-label="0 of 3 strikes"><i></i><i></i><i></i></span>
-      <span class="stat">best <b id="best">–</b></span>
+      <span class="strikes" id="strikes" role="img" aria-label="0 of 3 misses"><i></i><i></i><i></i></span>
+      <span class="stat"><span id="stat-label">best</span> <b id="best">–</b></span>
+      <button id="quit" type="button">Quit</button>
       <button id="mute" type="button" aria-pressed="false">Sound on</button>
     </div>
   </div>
 
   <section class="over" id="over" aria-labelledby="over-title">
     <button class="x" id="over-x" type="button" aria-label="Close">×</button>
-    <p class="eyebrow" id="over-title">Three strikes</p>
+    <p class="eyebrow" id="over-title">Three misses</p>
     <p class="result"><span class="num" id="over-score">0</span> <span class="unit" id="over-unit">points</span></p>
     <p class="detail" id="over-best"></p>
     <div class="over-btns">
@@ -74,9 +75,9 @@
     </div>
   </section>
 
-  <script defer src="/assets/core.js"></script>
-  <script defer src="/assets/sling.js"></script>
-  <script defer src="/assets/tennis.js"></script>
-  <script defer src="/assets/baseball.js"></script>
+  <script defer src="/assets/core.js?v=20261117c"></script>
+  <script defer src="/assets/sling.js?v=20261117c"></script>
+  <script defer src="/assets/tennis.js?v=20261117c"></script>
+  <script defer src="/assets/baseball.js?v=20261117c"></script>
 </body>
 </html>

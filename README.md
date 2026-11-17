@@ -3,15 +3,21 @@
 Personal landing page, served by GitHub Pages. Plain static files, no build step.
 
 The page is a playable court with the name built into it. Four games, picked from the chips at
-the top (or by URL: `/#hoops`, `/#baseball`, `/#tennis`, `/#mixed`):
+the top (or by URL: `/#hoops`, `/#baseball`, `/#tennis`, `/#mixed`). Quit (or Esc) leaves a game
+early without it counting as a loss; your score still counts toward your best.
 
-- **Basketball** – a hardwood court. The painted name is solid and the dot after it is a ball:
-  pull back and let go to shoot at a hoop a drone lifts off the court. The letters are a drum kit.
+- **Basketball** – a hardwood court. The painted name is solid and the dot after it is a ball (on a
+  tall phone it rests on top of the name instead): pull back and let go to shoot at a hoop a drone lifts off the court. The letters are a drum kit.
 - **Mixed** – the same, but the drone swaps between a hoop, a glove (no bounces allowed) and a
   racket (must bounce first).
 - **Baseball** – the drone pitches, a tap swings, and J-E-F-F field the infield. Timing sets
-  direction and distance.
-- **Tennis** – a rally with the drone over a net that spells PETTYJOHN; the racket follows the pointer.
+  direction and distance. PETTYJOHN is mown into the outfield grass.
+
+Tennis and baseball fit their field around the page's own boxes, and re-centre it (with a quick fade)
+when a game starts and the words make way for the scoreboard.
+- **Tennis** – one service game against the drone, scored like tennis (15, 30, 40, deuce, advantage),
+  over a net that spells PETTYJOHN, with JEFF behind each baseline. The racket follows the pointer.
+  Drone shots heading out are marked and left alone; sharp angles and hard swings can beat the drone.
 
 Files:
 

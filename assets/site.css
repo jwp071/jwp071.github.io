@@ -69,6 +69,8 @@ a { color: inherit; }
 #floor { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 #court { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
 #court:active { cursor: grabbing; }
+#floor, #court { transition: opacity .15s ease; }
+body.shift #floor, body.shift #court { opacity: 0; }
 .grain {
   position: fixed; inset: 0; pointer-events: none; opacity: .1;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 .08  0 0 0 0 .05  0 0 0 .9 -.25'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -135,6 +137,7 @@ body[data-state='play'] .modes { opacity: 0; visibility: hidden; }
 .hud-side { display: flex; align-items: center; gap: 14px; background: rgba(251, 246, 234, .9); border: 1px solid var(--ink); padding: 6px 6px 6px 12px; }
 .strikes { display: flex; gap: 6px; }
 .strikes i { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--ink); }
+body[data-mode='tennis'] .strikes { display: none; }
 .strikes i.on { background: var(--orange); border-color: var(--orange); }
 .stat b { font-weight: 500; color: var(--orange); }
 .hud-side button { pointer-events: auto; border: 1px solid var(--rule); padding: 8px 10px; white-space: nowrap; }
@@ -180,11 +183,28 @@ body:not([data-state='over']) .over { opacity: 0; visibility: hidden; transform:
   .num { font-size: 2rem; }
   .hud .unit { letter-spacing: .08em; }
 }
+@media (max-width: 400px) {
+  .modes { gap: 5px; left: 16px; right: 16px; }
+  .modes button { padding: 10px 7px; letter-spacing: .05em; font-size: 10px; }
+  .hud { left: 16px; right: 16px; }
+  .hud-side { gap: 8px; }
+}
 @media (max-height: 480px) {
   .note { display: none; }
   .lede { font-size: .92rem; }
   .info { bottom: 18px; width: min(24rem, 55vw); }
   .links { margin-top: .5rem; }
+}
+/* Short landscape screens: on the tennis court and the ball field, the words and the scoreboard keep to
+   a column on the left, so the game can have the rest of the screen. */
+@media (max-height: 480px) and (orientation: landscape) {
+  body[data-mode='tennis'] .info, body[data-mode='baseball'] .info { width: min(20rem, 44vw); }
+  body[data-mode='tennis'] .info .lede, body[data-mode='baseball'] .info .lede { font-size: .85rem; }
+  body[data-mode='tennis'] .hud, body[data-mode='baseball'] .hud { flex-direction: column; right: auto; gap: 8px; width: 9.5rem; }
+  body[data-mode='tennis'] .hud-score, body[data-mode='baseball'] .hud-score { align-self: stretch; }
+  body[data-mode='tennis'] .hud-side, body[data-mode='baseball'] .hud-side { flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; align-self: stretch; }
+  body[data-mode='tennis'] .hud-side .strikes, body[data-mode='baseball'] .hud-side .strikes { justify-content: center; padding: 3px 0; }
+  body[data-mode='tennis'] .hud-side .stat, body[data-mode='baseball'] .hud-side .stat { display: block; text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; }

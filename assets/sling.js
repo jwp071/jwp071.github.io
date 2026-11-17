@@ -32,15 +32,23 @@
     ctx.font = '400 ' + fs + 'px ' + JP.FONT;
     var capH = cap * fs;
     nameX = margin;
-    var top = (W < 700 && H > W ? 0.36 : 0.24) * H;
+    var top = (tall() ? 0.36 : 0.24) * H;
     base[0] = top + capH;
     base[1] = base[0] + capH * 1.16;
     glyphs = JP.glyphs(ctx, JP.WORDS[0], nameX, base[0], 1).concat(JP.glyphs(ctx, JP.WORDS[1], nameX, base[1], 5));
 
     Rb = Math.max(12, Math.min(24, capH * 0.15));
     RW = Rb * 1.6; TR = Rb * 1.3;
-    home.x = nameX + wide * fs + Rb + Math.max(6, fs * 0.05);
-    home.y = base[1] - Rb;
+    if (tall()) {
+      // On a tall phone the spot after the name is boxed in by the wall, so the ball rests on top of
+      // PETTYJOHN instead, in the open floor to the right of JEFF.
+      var jeffEnd = glyphs[3].x + glyphs[3].w, nameEnd = nameX + wide * fs;
+      home.x = Math.min(nameEnd - 1.5 * Rb, (jeffEnd + W - 14) / 2);
+      home.y = base[1] - capH * 1.02 - Rb;
+    } else {
+      home.x = nameX + wide * fs + Rb + Math.max(6, fs * 0.05);
+      home.y = base[1] - Rb;
+    }
 
     BALLS = [
       { name: 'Basketball', goal: 'through the hoop', r: Rb, e: 0.74, power: 1, drag: 0, kind: 0 },
@@ -69,6 +77,8 @@
     if (JP.land) { court.x = W - m - 5.25 * u; court.y = m + 25 * u; } else { court.x = m + 25 * u; court.y = m + 44 + 5.25 * u; }
     court.r = Math.max(5, 0.75 * u);
   }
+
+  function tall() { return window.innerWidth < 700 && window.innerHeight > window.innerWidth; }
 
   function solid(x, y) {
     var xi = (x * ms) | 0, yi = (y * ms) | 0;
@@ -373,7 +383,7 @@
   }
 
   function missed(b) {
-    JP.say('Strike ' + (JP.outs + 1), Math.max(60, Math.min(W - 60, b.x)), Math.min(H - 40, b.y) - 2 * Rb, false);
+    JP.say('Miss ' + (JP.outs + 1), Math.max(60, Math.min(W - 60, b.x)), Math.min(H - 40, b.y) - 2 * Rb, false);
     JP.sound.bad();
     spare.push(b);
     ball = null; flying = false;
@@ -609,8 +619,9 @@
     lift(false);
     if (JP.state === 'idle' && !usedHint && ball && !aim && drone.ready) {
       ctx.font = '500 11px ' + JP.MONO;
-      ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.fillStyle = INK;
-      ctx.fillText('PULL BACK & LET GO ↗', Math.min(W - 16, ball.x + ball.r + 4), ball.y + ball.r + 14);
+      ctx.textAlign = 'right'; ctx.fillStyle = INK;
+      if (tall()) { ctx.textBaseline = 'bottom'; ctx.fillText('PULL BACK & LET GO ↗', W - 26, ball.y - ball.r - 12); }
+      else { ctx.textBaseline = 'top'; ctx.fillText('PULL BACK & LET GO ↗', Math.min(W - 16, ball.x + ball.r + 4), ball.y + ball.r + 14); }
     }
   }
 
@@ -637,10 +648,11 @@
 
   function make(isMixed) {
     return {
-      lede: isMixed
-        ? 'The dot after my name is a ball: pull back, aim at whatever the drone is carrying, let go.'
-        : 'The dot after my name is a ball: pull back, aim for the hoop, let go.',
-      overTitle: 'Three strikes', outWord: 'strikes',
+      lede: function () {
+        return (tall() ? 'The ball resting on my name is yours: ' : 'The dot after my name is a ball: ') +
+          (isMixed ? 'pull back, aim at whatever the drone is carrying, let go.' : 'pull back, aim for the hoop, let go.');
+      },
+      overTitle: 'Three misses', outWord: 'misses',
       layout: layout, floor: floor, reset: function () { reset(isMixed); }, update: update, draw: draw,
       down: down, move: move, up: up, cancel: function () { aim = null; }, debug: debug
     };

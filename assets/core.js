@@ -29,6 +29,18 @@
   }
   JP.store = store;
   JP.register = function (key, game) { JP.games[key] = game; };
+  // Does the box (x0, y0)-(x1, y1) overlap any of the named page boxes? By default, the ones showing
+  // at this stage: the game buttons and the words before a game, the scoreboard during one.
+  JP.stage = 'idle';
+  JP.covered = function (x0, y0, x1, y1, names, pad) {
+    var ui = JP.ui || {}, list = names || (JP.stage === 'idle' ? ['modes', 'info'] : ['hud-score', 'hud-side']);
+    pad = pad === undefined ? 6 : pad;
+    for (var i = 0; i < list.length; i++) {
+      var r = ui[list[i]];
+      if (r && x1 > r.x0 - pad && x0 < r.x1 + pad && y1 > r.y0 - pad && y0 < r.y1 + pad) return true;
+    }
+    return false;
+  };
 
   /* ---------- layout ---------- */
   function layout() {
@@ -39,11 +51,20 @@
     canvas.width = floor.width = Math.round(W * JP.dpr);
     canvas.height = floor.height = Math.round(H * JP.dpr);
     JP.keepOut = [{ x0: 0, y0: 0, x1: W, y1: 74 }];
-    var info = $('info');
-    if (info) {
-      var r = info.getBoundingClientRect();
-      JP.keepOut.push({ x0: r.left - 10, y0: r.top - 10, x1: r.right + 10, y1: r.bottom + 10 });
-    }
+    // Where the page's own boxes sit (hidden ones still have a layout), so a game can keep its field clear of them.
+    JP.ui = {};
+    ['modes', 'info', 'hud-score', 'hud-side'].forEach(function (id) {
+      var el = id === 'modes' ? document.querySelector('#modes') : id === 'info' ? $('info') : document.querySelector('.' + id);
+      if (!el) return;
+      var r = el.getBoundingClientRect();
+      if (id === 'modes' && el.lastElementChild) {               // the row of buttons, not the whole strip
+        var a = el.firstElementChild.getBoundingClientRect(), b = el.lastElementChild.getBoundingClientRect();
+        r = { left: a.left, top: Math.min(a.top, b.top), right: Math.max(a.right, b.right), bottom: Math.max(a.bottom, b.bottom) };
+        if (b.top > a.top + 4) r.right = el.getBoundingClientRect().right;
+      }
+      JP.ui[id] = { x0: r.left, y0: r.top, x1: r.right, y1: r.bottom };
+    });
+    if (JP.ui.info) { var ri = JP.ui.info; JP.keepOut.push({ x0: ri.x0 - 10, y0: ri.y0 - 10, x1: ri.x1 + 10, y1: ri.y1 + 10 }); }
     if (JP.game) {
       JP.game.layout();
       var f = floor.getContext('2d');
@@ -131,30 +152,31 @@
     ctx.restore();
   };
 
-  // A quadcopter seen from above. `alt` lifts it off the floor (bigger, with its shadow further away).
+  // A quadcopter seen from above, lying across the screen like the one that carries the hoop.
+  // `alt` lifts it off the floor (bigger, with its shadow further away).
   JP.droneTop = function (x, y, size, rot, alt, glow) {
-    var s = size * (1 + alt * 0.25), i;
+    var s = size * (1 + alt * 0.25), i, ax = s * 1.3, ay = s * 0.85;
     ctx.save();
     ctx.fillStyle = 'rgba(8,16,30,.25)';
-    ctx.beginPath(); ctx.ellipse(x + size * (0.25 + alt * 0.9), y + size * (0.35 + alt * 1.3), size * 1.25, size * 1.0, 0, 0, 6.2832); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + size * (0.25 + alt * 0.9), y + size * (0.35 + alt * 1.3), size * 1.6, size * 1.05, 0, 0, 6.2832); ctx.fill();
     ctx.translate(x, y); ctx.rotate(rot);
     ctx.strokeStyle = '#c9d2d0'; ctx.lineWidth = Math.max(2.5, s * 0.16); ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(-s, -s); ctx.lineTo(s, s); ctx.moveTo(s, -s); ctx.lineTo(-s, s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-ax, -ay); ctx.lineTo(ax, ay); ctx.moveTo(ax, -ay); ctx.lineTo(-ax, ay); ctx.stroke();
     for (i = 0; i < 4; i++) {
-      var mx = (i % 2 ? 1 : -1) * s, my = (i < 2 ? -1 : 1) * s;
-      ctx.fillStyle = 'rgba(20,35,59,.16)'; ctx.beginPath(); ctx.arc(mx, my, s * 0.62, 0, 6.2832); ctx.fill();
+      var mx = (i % 2 ? 1 : -1) * ax, my = (i < 2 ? -1 : 1) * ay;
+      ctx.fillStyle = 'rgba(20,35,59,.16)'; ctx.beginPath(); ctx.arc(mx, my, s * 0.6, 0, 6.2832); ctx.fill();
       ctx.strokeStyle = 'rgba(20,35,59,.5)'; ctx.lineWidth = Math.max(1.5, s * 0.07);
       var a = JP.reduced ? 0.6 : JP.clock * 31 * (i % 2 ? 1 : -1) + i;
-      ctx.beginPath(); ctx.moveTo(mx - Math.cos(a) * s * 0.58, my - Math.sin(a) * s * 0.58); ctx.lineTo(mx + Math.cos(a) * s * 0.58, my + Math.sin(a) * s * 0.58); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mx - Math.cos(a) * s * 0.56, my - Math.sin(a) * s * 0.56); ctx.lineTo(mx + Math.cos(a) * s * 0.56, my + Math.sin(a) * s * 0.56); ctx.stroke();
       ctx.fillStyle = '#8f9a98'; ctx.beginPath(); ctx.arc(mx, my, s * 0.13, 0, 6.2832); ctx.fill();
     }
     ctx.fillStyle = '#e9eeeb'; ctx.strokeStyle = JP.INK; ctx.lineWidth = 1.2;
     ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(-s * 0.5, -s * 0.62, s, s * 1.24, s * 0.3); else ctx.rect(-s * 0.5, -s * 0.62, s, s * 1.24);
+    if (ctx.roundRect) ctx.roundRect(-s * 0.72, -s * 0.46, s * 1.44, s * 0.92, s * 0.32); else ctx.rect(-s * 0.72, -s * 0.46, s * 1.44, s * 0.92);
     ctx.fill(); ctx.stroke();
-    ctx.fillStyle = JP.INK; ctx.beginPath(); ctx.arc(0, s * 0.3, s * 0.2, 0, 6.2832); ctx.fill();       // camera, facing "down" the screen
+    ctx.fillStyle = JP.INK; ctx.beginPath(); ctx.arc(s * 0.3, s * 0.12, s * 0.19, 0, 6.2832); ctx.fill();       // camera
     ctx.fillStyle = glow ? '#ffd27a' : ((JP.clock % 1.4) < 0.7 ? JP.ORANGE : '#8a3a1c');
-    ctx.beginPath(); ctx.arc(0, -s * 0.28, s * 0.12, 0, 6.2832); ctx.fill();
+    ctx.beginPath(); ctx.arc(-s * 0.36, -s * 0.06, s * 0.11, 0, 6.2832); ctx.fill();
     ctx.restore();
   };
 
@@ -236,59 +258,101 @@
   /* ---------- scoreboard and flow ---------- */
   function best() { return parseInt(store('jp.best.' + JP.mode), 10) || 0; }
   function hud() {
-    $('score').textContent = JP.score;
-    $('best').textContent = best() || '–';
+    var g = JP.game, st = g.stat ? g.stat() : ['best', best() || '–'];
+    $('score').textContent = g.call ? g.call() : JP.score;
+    $('stat-label').textContent = st[0];
+    $('best').textContent = st[1];
     var marks = document.querySelectorAll('#strikes i');
     for (var i = 0; i < marks.length; i++) marks[i].className = i < JP.outs ? 'on' : '';
-    $('strikes').setAttribute('aria-label', JP.outs + ' of 3 ' + (JP.game.outWord || 'strikes'));
+    $('strikes').setAttribute('aria-label', JP.outs + ' of 3 ' + (g.outWord || 'strikes'));
   }
+  JP.hud = hud;
   JP.goal = function (text) { $('goal').textContent = text; };
   JP.addScore = function (n) { JP.score += n; hud(); };
+  // Games that fit their field around the page's boxes lay out again when the boxes change: the words
+  // make way for the scoreboard when play starts. The field fades out and back in at its new place.
+  var shiftTimer = 0;
   function setState(s) {
     JP.state = s;
     body.setAttribute('data-state', s);
     $('over').inert = s !== 'over';
     $('modes').inert = s === 'play';
+    var stage = s === 'idle' ? 'idle' : 'play';
+    if (stage === JP.stage) return;
+    JP.stage = stage;
+    if (!JP.game || !JP.game.relayout) return;
+    clearTimeout(shiftTimer);
+    if (JP.reduced) { relayout(); return; }
+    body.classList.add('shift');
+    shiftTimer = setTimeout(function () { relayout(); body.classList.remove('shift'); }, 160);
   }
+  function relayout() { layout(); JP.game.relayout(); }
   JP.begin = function () { if (JP.state === 'idle') setState('play'); };
+
+  // End the run and show the result panel. o: { title, num, unit, detail, good, share, delay }
+  var run = 0, shareText = '';
+  JP.finish = function (o) {
+    var r = run;
+    $('over-title').textContent = o.title;
+    $('over-score').textContent = o.num;
+    $('over-unit').textContent = o.unit;
+    $('over-best').textContent = o.detail;
+    $('over-best').classList.toggle('new', !!o.good);
+    shareText = o.share;
+    hud();
+    setTimeout(function () {
+      if (r !== run) return;
+      setState('over');
+      setTimeout(function () { var a = $('again'); if (a && JP.state === 'over') a.focus({ preventScroll: true }); }, 450);
+    }, o.delay || 650);
+  };
+  function keepBest() {
+    if (JP.game.call || JP.score <= best()) return false;
+    store('jp.best.' + JP.mode, String(JP.score));
+    return true;
+  }
   // One strike/out. Returns true when that ends the run.
   JP.out = function () {
     JP.outs++; hud();
     if (JP.outs < 3) return false;
-    var isBest = JP.score > best();
-    if (isBest) store('jp.best.' + JP.mode, String(JP.score));
-    $('over-title').textContent = JP.game.overTitle || 'Three strikes';
-    $('over-score').textContent = JP.score;
-    $('over-unit').textContent = JP.game.unit ? JP.game.unit(JP.score) : (JP.score === 1 ? 'point' : 'points');
-    $('over-best').textContent = isBest ? 'A new personal best.' : 'Your best: ' + best();
-    $('over-best').classList.toggle('new', isBest);
-    hud();
-    setTimeout(function () {
-      if (JP.outs < 3) return;
-      setState('over');
-      setTimeout(function () { var a = $('again'); if (a && JP.state === 'over') a.focus({ preventScroll: true }); }, 450);
-    }, 650);
+    var isBest = keepBest(), word = JP.game.outWord || 'strikes';
+    JP.finish({
+      title: JP.game.overTitle || 'Three strikes', num: JP.score,
+      unit: JP.game.unit ? JP.game.unit(JP.score) : (JP.score === 1 ? 'point' : 'points'),
+      detail: isBest ? 'A new personal best.' : 'Your best: ' + best(), good: isBest,
+      share: 'I scored ' + JP.score + ' at ' + LABEL[JP.mode].toLowerCase() + ' against a drone. Three ' + word + ' and you’re out:'
+    });
     return true;
   };
   function restart() {
+    run++;
     JP.score = 0; JP.outs = 0; fx.length = 0; shake = 0; freeze = 0;
     setState('idle');
     JP.game.reset();
     hud();
   }
+  // Leave a game part-way: the score still counts toward your best, but it isn't a loss.
+  function quit() {
+    if (JP.state === 'play') keepBest();
+    restart();
+  }
 
   var LABEL = { hoops: 'Basketball', baseball: 'Baseball', tennis: 'Tennis', mixed: 'Mixed' };
   function setMode(key) {
     if (!JP.games[key]) key = 'hoops';
+    clearTimeout(shiftTimer); body.classList.remove('shift');
+    JP.stage = 'idle';
     JP.mode = key; JP.game = JP.games[key];
     body.setAttribute('data-mode', key);
     store('jp.mode', key);
     var btns = document.querySelectorAll('#modes button');
     for (var i = 0; i < btns.length; i++) btns[i].setAttribute('aria-pressed', btns[i].getAttribute('data-mode') === key ? 'true' : 'false');
-    $('lede-how').textContent = JP.game.lede;
+    setLede();
     layout();
     restart();
   }
+
+  function setLede() { var l = JP.game.lede; $('lede-how').textContent = typeof l === 'function' ? l() : l; }
 
   /* ---------- input ---------- */
   var active = null;
@@ -306,7 +370,7 @@
   window.addEventListener('contextmenu', function (e) { if (e.target === canvas) e.preventDefault(); });
   window.addEventListener('keydown', function (e) {
     var onButton = e.target && /^(BUTTON|A)$/.test(e.target.tagName);
-    if (e.code === 'Escape' && JP.state !== 'idle') { restart(); return; }
+    if (e.code === 'Escape' && JP.state !== 'idle') { quit(); return; }
     if (e.code === 'Space' && !onButton && !e.repeat && JP.state !== 'over' && JP.game && JP.game.key) { e.preventDefault(); JP.game.key(); }
   });
 
@@ -314,6 +378,7 @@
   on('again', restart);
   on('close', restart);
   on('over-x', restart);
+  on('quit', function () { $('quit').blur(); quit(); });
   $('modes').addEventListener('click', function (e) {
     var b = e.target.closest('button');
     if (b && b.getAttribute('data-mode') !== JP.mode) { history.replaceState(null, '', '#' + b.getAttribute('data-mode')); setMode(b.getAttribute('data-mode')); }
@@ -323,8 +388,7 @@
   on('mute', function () { muted = !muted; store('jp.mute', muted ? '1' : '0'); showMute(); tone(520, 0.1, 'triangle', 0.07); });
   showMute();
   on('share', function () {
-    var btn = $('share'), url = location.origin + location.pathname + '#' + JP.mode;
-    var text = 'I scored ' + JP.score + ' at ' + LABEL[JP.mode].toLowerCase() + ' against a drone. Three ' + (JP.game.outWord || 'strikes') + ' and you’re out:';
+    var btn = $('share'), url = location.origin + location.pathname + '#' + JP.mode, text = shareText;
     function done(msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = 'Challenge a friend'; }, 2200); }
     if (navigator.share) navigator.share({ text: text, url: url }).catch(function () { /* cancelled */ });
     else if (navigator.clipboard) navigator.clipboard.writeText(text + ' ' + url).then(function () { done('Link copied'); }, function () { done('Could not copy'); });
@@ -355,7 +419,7 @@
   function start() {
     var m = /^#(hoops|baseball|tennis|mixed)$/.exec(location.hash);
     setMode(m ? m[1] : (store('jp.mode') || 'hoops'));
-    window.addEventListener('resize', function () { layout(); restart(); });
+    window.addEventListener('resize', function () { clearTimeout(shiftTimer); body.classList.remove('shift'); JP.stage = 'idle'; setLede(); layout(); restart(); });
     requestAnimationFrame(frame);
   }
   var started = false;

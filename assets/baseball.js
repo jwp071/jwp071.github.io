@@ -6,16 +6,46 @@
   if (!JP) return;
   var ctx = JP.ctx, CHALK = JP.CHALK, INK = JP.INK, NAVY = JP.NAVY, ORANGE = JP.ORANGE;
 
-  var W, H, S, hx, hy, RF, TH, B, br, lfs, fenceFs;
-  var fielders = [], fenceGlyphs = [];
+  var W, H, S, hx, hy, RF, TH, B, br, lfs, fieldFs, fieldRad;
+  var fielders = [], fieldGlyphs = [];
 
   function at(r, phi) { return { x: hx + r * Math.sin(phi), y: hy - r * Math.cos(phi) }; }
 
+  // Does a field with the plate at (x, y) and the wall at radius r fit the screen without running under
+  // the buttons, the scoreboard or the words? The plate and infield must be fully clear; the outfield may
+  // run off the sides (like a TV shot), but the middle of the wall must show.
+  function fits(x, y, r) {
+    var i, j, ph, px, py, cov = JP.covered;
+    if (y + r * 0.12 > H - 6 || y - r < 8) return false;
+    var lw = Math.max(r * 0.16, 108);
+    if (x - lw < 4 || x + lw > W - 4 || cov(x - lw, y - r * 0.12 - 14, x + lw, y + r * 0.12)) return false;
+    for (i = 1; i <= 10; i++) {
+      var rr = r * i / 10, strict = i <= 5;
+      for (j = -4; j <= 4; j++) {
+        ph = TH * j / 4; px = x + rr * Math.sin(ph); py = y - rr * Math.cos(ph);
+        var on = px >= 4 && px <= W - 4 && py >= 4;
+        if (strict && !on) return false;
+        if (i === 10 && Math.abs(j) <= 1 && !on) return false;
+        if (on && cov(px - 3, py - 3, px + 3, py + 3)) return false;
+      }
+    }
+    return true;
+  }
+
   function layout() {
     W = JP.W; H = JP.H; S = JP.S;
-    hx = W / 2; hy = H - Math.max(84, H * 0.13);
-    RF = hy - (W < 700 ? 132 : 80);
-    TH = Math.max(0.3, Math.min(Math.PI / 4, Math.asin(Math.min(1, (W / 2 - 14) / (RF * 0.87)))));
+    TH = Math.PI / 4;                                   // foul lines at a right angle, like a real diamond
+    // Biggest field first; at each size, the spot nearest the middle across, centred in the room up and down.
+    var found = false, r, y, k, x, ok;
+    for (r = (H - 14) / 1.12; r >= 110 && !found; r *= 0.97) {
+      for (k = 0; k <= 24 && !found; k++) {
+        x = W / 2 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * W * 0.02;
+        ok = [];
+        for (y = H - 6 - r * 0.12; y - r >= 8; y -= Math.max(4, H * 0.015)) if (fits(x, y, r)) ok.push(y);
+        if (ok.length) { found = true; hx = x; RF = r; hy = ok[ok.length >> 1]; }
+      }
+    }
+    if (!found) { hx = W / 2; hy = H - Math.max(60, H * 0.1); RF = Math.max(100, Math.min(hy - 60, (W / 2 - 10) / Math.sin(TH))); }
     B = RF * 0.27;
     br = Math.max(5, Math.min(9, RF * 0.012));
     lfs = Math.max(22, Math.min(62, RF * 0.095, 0.46 * TH * 0.45 * RF * 0.82));
@@ -23,14 +53,26 @@
     fielders = [];
     for (var i = 0; i < 4; i++) fielders.push({ ch: JP.WORDS[0][i], phi: spots[i][0] * TH, r: spots[i][1] * RF, off: 0, want: 0, hop: 0 });
 
-    // the surname runs along the outfield wall
-    fenceFs = Math.max(16, Math.min(34, RF * 0.055));
-    ctx.font = '400 ' + fenceFs + 'px ' + JP.FONT;
-    var word = JP.WORDS[1], rad = RF + fenceFs * 0.75, total = 0, ws = [];
-    for (i = 0; i < word.length; i++) { ws.push(ctx.measureText(word[i]).width + fenceFs * 0.28); total += ws[i]; }
-    var a = -total / rad / 2;
-    fenceGlyphs = [];
-    for (i = 0; i < word.length; i++) { fenceGlyphs.push({ ch: word[i], phi: a + ws[i] / rad / 2, rad: rad }); a += ws[i] / rad; }
+    // the surname is mown into the outfield, letter by letter along the part of the arc that's on screen
+    var word = JP.WORDS[1], rad = RF * 0.735, ws = [], total = 0;
+    var lo = -TH * 0.9, hi = TH * 0.9;
+    if (hx - 20 < rad) lo = Math.max(lo, -Math.asin((hx - 20) / rad));
+    if (W - 20 - hx < rad) hi = Math.min(hi, Math.asin((W - 20 - hx) / rad));
+    ctx.font = '400 100px ' + JP.FONT;
+    for (i = 0; i < word.length; i++) { ws.push(ctx.measureText(word[i]).width + 14); total += ws[i]; }
+    fieldFs = Math.min(RF * 0.27, (hi - lo) * 0.92 * rad * 100 / total);
+    var a = (lo + hi) / 2 - total * fieldFs / 100 / rad / 2;
+    fieldGlyphs = [];
+    for (i = 0; i < word.length; i++) { var gw = ws[i] * fieldFs / 100 / rad; fieldGlyphs.push({ ch: word[i], phi: a + gw / 2 }); a += gw; }
+    fieldRad = rad;
+  }
+
+  // Keep a ball that travels `d` from the plate on screen, by pulling its direction in from the side.
+  function onScreen(phi, d) {
+    var s = d * Math.sin(phi);
+    if (s > W - 14 - hx) return Math.asin(Math.min(1, (W - 14 - hx) / d));
+    if (s < 14 - hx) return -Math.asin(Math.min(1, (hx - 14) / d));
+    return phi;
   }
 
   function wedge(c, r0, r1, a0, a1) {
@@ -40,22 +82,52 @@
     c.closePath();
   }
 
+  // Short blades of grass scattered over a ring segment; `dens` is blades per square pixel.
+  function grass(c, rnd, th, r0, r1, colors, dens) {
+    var n = Math.min(40000, Math.round(th * (r1 * r1 - r0 * r0) * dens)), k, i;
+    c.lineWidth = 1; c.lineCap = 'round';
+    for (k = 0; k < colors.length; k++) {
+      c.strokeStyle = colors[k]; c.beginPath();
+      for (i = 0; i < n / colors.length; i++) {
+        var r = Math.sqrt(r0 * r0 + rnd() * (r1 * r1 - r0 * r0)), ph = (rnd() * 2 - 1) * th;
+        var x = hx + r * Math.sin(ph), y = hy - r * Math.cos(ph), len = 1.5 + rnd() * 2.5, lean = (rnd() - 0.5) * 1.4;
+        c.moveTo(x, y); c.lineTo(x + lean, y - len);
+      }
+      c.stroke();
+    }
+  }
+
   function floor(c) {
     var i, p;
     c.fillStyle = '#17263f'; c.fillRect(0, 0, W, H);                       // beyond the wall
     var FW = TH + 0.3;                                                      // fair territory plus a strip of foul ground
+    var seed = 11;
+    function rnd() { seed = (Math.imul(seed, 1664525) + 1013904223) | 0; return (seed >>> 0) / 4294967296; }
     c.fillStyle = '#2f6f45'; wedge(c, 0, RF, -FW, FW); c.fill();
     c.beginPath(); c.arc(hx, hy, RF * 0.2, 0, 6.2832); c.fill();            // behind the plate
-    // mown stripes across fair territory
-    for (i = 0; i < 11; i++) {
-      c.fillStyle = i % 2 ? '#3b8a52' : '#347f4b';
-      wedge(c, RF * i / 11, RF * (i + 1) / 11 + 0.5, -TH, TH); c.fill();
+    c.fillStyle = '#3b8650'; wedge(c, 0, RF, -TH, TH); c.fill();           // fair territory
+    grass(c, rnd, FW, 0, RF, ['rgba(20,60,32,.35)', 'rgba(120,190,120,.16)', 'rgba(10,40,20,.3)'], 0.06);
+
+    // the name, in deep, rough grass
+    var dpr = JP.dpr, off = document.createElement('canvas'), o = off.getContext('2d');
+    off.width = Math.round(W * dpr); off.height = Math.round(H * dpr);
+    o.setTransform(dpr, 0, 0, dpr, 0, 0);
+    o.font = '400 ' + fieldFs + 'px ' + JP.FONT; o.textAlign = 'center'; o.textBaseline = 'alphabetic';
+    o.fillStyle = '#1d4d2e';
+    for (i = 0; i < fieldGlyphs.length; i++) {
+      p = at(fieldRad, fieldGlyphs[i].phi);
+      o.save(); o.translate(p.x, p.y); o.rotate(fieldGlyphs[i].phi); o.fillText(fieldGlyphs[i].ch, 0, fieldFs * 0.36); o.restore();
     }
+    o.globalCompositeOperation = 'source-atop';
+    grass(o, rnd, TH, fieldRad - fieldFs * 0.6, fieldRad + fieldFs * 0.6, ['rgba(8,30,16,.55)', 'rgba(90,150,90,.28)', 'rgba(40,95,55,.5)'], 0.32);
+    c.save(); c.shadowColor = 'rgba(5,25,12,.45)'; c.shadowBlur = 3; c.shadowOffsetY = 1;
+    c.drawImage(off, 0, 0, W, H); c.restore();
+
     c.fillStyle = '#b98952'; wedge(c, RF * 0.95, RF, -FW, FW); c.fill();   // warning track
     // infield dirt, then the grass diamond inside it
     c.fillStyle = '#c4935a'; wedge(c, 0, RF * 0.5, -TH, TH); c.fill();
     var b1 = at(B, TH), b3 = at(B, -TH), b2 = { x: hx, y: hy - 2 * B * Math.cos(TH) };
-    c.fillStyle = '#3b8a52';
+    c.fillStyle = '#3b8650';
     c.beginPath();
     var inset = 0.86, cy = hy - B * Math.cos(TH);
     c.moveTo(hx, cy + (hy - cy) * inset); c.lineTo(hx + (b1.x - hx) * inset, cy); c.lineTo(hx, cy + (b2.y - cy) * inset); c.lineTo(hx + (b3.x - hx) * inset, cy);
@@ -63,8 +135,6 @@
     c.fillStyle = '#c4935a';
     c.beginPath(); c.arc(hx, hy - RF * 0.2, RF * 0.035, 0, 6.2832); c.fill();   // mound
     c.beginPath(); c.arc(hx, hy, RF * 0.06, 0, 6.2832); c.fill();               // home circle
-    var seed = 11;
-    function rnd() { seed = (Math.imul(seed, 1664525) + 1013904223) | 0; return (seed >>> 0) / 4294967296; }
     for (i = 0; i < 2200; i++) {
       c.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.045)';
       c.fillRect(rnd() * W, 60 + rnd() * (H - 60), 1.5, 1.5);
@@ -80,14 +150,9 @@
     [b1, b2, b3].forEach(function (q) { c.save(); c.translate(q.x, q.y); c.rotate(Math.PI / 4); c.fillRect(-bs, -bs, 2 * bs, 2 * bs); c.restore(); });
     c.fillRect(hx - RF * 0.03, hy - RF * 0.2 - 2, RF * 0.06, 4);                // rubber
     c.beginPath(); c.moveTo(hx - bs, hy - bs); c.lineTo(hx + bs, hy - bs); c.lineTo(hx + bs, hy); c.lineTo(hx, hy + bs); c.lineTo(hx - bs, hy); c.closePath(); c.fill();
-    // the wall and the name on it
+    // the wall
     c.strokeStyle = '#f2c14e'; c.lineWidth = Math.max(3, RF * 0.006);
     c.beginPath(); c.arc(hx, hy, RF, -Math.PI / 2 - FW, -Math.PI / 2 + FW); c.stroke();
-    c.font = '400 ' + fenceFs + 'px ' + JP.FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = CHALK;
-    for (i = 0; i < fenceGlyphs.length; i++) {
-      var g = fenceGlyphs[i]; p = at(g.rad, g.phi);
-      c.save(); c.translate(p.x, p.y); c.rotate(g.phi); c.fillText(g.ch, 0, 0); c.restore();
-    }
     var sh = c.createRadialGradient(hx, hy - RF * 0.5, 0, hx, hy - RF * 0.5, Math.max(W, H) * 0.8);
     sh.addColorStop(0, 'rgba(255,255,230,.07)'); sh.addColorStop(1, 'rgba(0,10,0,.25)');
     c.fillStyle = sh; c.fillRect(0, 0, W, H);
@@ -141,7 +206,7 @@
   function contact(err) {
     var w = win(), q = 1 - Math.abs(err) / w;
     var phi = Math.max(-1, Math.min(1, err / w)) * TH * 0.92 + (Math.random() - 0.5) * 0.06;
-    phi = Math.max(-TH * 0.97, Math.min(TH * 0.97, phi));
+    phi = onScreen(Math.max(-TH * 0.97, Math.min(TH * 0.97, phi)), RF * 0.8);
     var p = Math.min(1.05, Math.pow(q, 0.8) * (0.92 + 0.16 * Math.random()));
     hit = { phi: phi, t: 0, x: hx, y: hy, z: 0, done: false };
     strikes = 0; goal();
@@ -164,6 +229,7 @@
       else hit.result = 1;
     } else {
       hit.D = RF * (0.2 + 1.05 * Math.pow(p, 1.3));
+      hit.phi = onScreen(hit.phi, Math.min(hit.D, RF));
       hit.result = hit.D >= RF ? 4 : hit.D >= RF * 0.86 ? 3 : hit.D >= RF * 0.7 ? 2 : 1;
       if (hit.result === 4) hit.D = RF * 1.45;
       hit.T = 0.85 + Math.min(1.3, hit.D / RF) * 0.75;
@@ -355,7 +421,7 @@
     lede: 'The drone pitches and you swing: tap as the ball reaches the plate, and find the gaps between the letters.',
     overTitle: 'Three outs', outWord: 'outs',
     unit: function (n) { return n === 1 ? 'base' : 'bases'; },
-    layout: layout, floor: floor, reset: reset, update: update, draw: draw,
+    layout: layout, floor: floor, reset: reset, update: update, draw: draw, relayout: function () {},
     down: swing, move: function () {}, up: function () {}, key: swing,
     debug: function () { return { phase: phase, strikes: strikes, plateIn: phase === 'flight' ? phaseAt + pitch.T - JP.clock : null, last: hit ? hit.result : null }; }
   });
